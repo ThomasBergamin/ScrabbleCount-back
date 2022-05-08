@@ -42,7 +42,7 @@ export const createGame = (req: Request, res: Response, next: NextFunction) => {
   const player2 = { id: req.body.player2, score: req.body.score2 };
   const winner = determineWinner(player1, player2);
   Game.create({
-    date: req.body.date,
+    date: req.body.date.split("-").reverse().join("-"),
     time: req.body.time,
     location: req.body.location,
     player1: {
