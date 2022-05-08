@@ -1,14 +1,14 @@
 const determineWinner: (
   player1: { id: string; score: string },
   player2: { id: string; score: string }
-) => string | void = (player1, player2) => {
+) => { playerId: string; playerScore: string } | void = (player1, player2) => {
   if (player1.score > player2.score) {
-    return player1.id;
+    return { playerId: player1.id, playerScore: player1.score };
   }
   if (player1.score === player2.score) {
     return;
   } else {
-    return player2.id;
+    return { playerId: player2.id, playerScore: player2.score };
   }
 };
 
