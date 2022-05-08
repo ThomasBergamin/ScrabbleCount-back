@@ -22,7 +22,7 @@ const gameSchema = new mongoose.Schema(
       scrabbles: { type: String, required: true },
     },
 
-    winner: { type: String },
+    winner: { playerId: { type: String }, playerScore: { type: String } },
     type: { type: String, required: true },
     commentaires: { type: String },
   },
