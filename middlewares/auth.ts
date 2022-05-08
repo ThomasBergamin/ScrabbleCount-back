@@ -8,6 +8,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
     const token = req.headers.authorization
       ? req.headers.authorization.split(" ")[1]
       : null;
+
     if (!token) {
       throw "Error with headers in request";
     }
