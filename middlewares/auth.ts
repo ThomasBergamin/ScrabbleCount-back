@@ -10,20 +10,24 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
       : null;
 
     if (!token) {
-      throw "Error with headers in request";
+      res.status(400).json({ error: "Error with headers in request" });
     }
-    const decodedToken: any = jwt.verify(
-      token,
-      process.env.SECRET_TOKEN
-        ? process.env.SECRET_TOKEN
-        : "63dfb00a-82f0-4125-a009-d6e745ba149f"
-    );
-    const userId = decodedToken.userId;
-    if (req.body.userId && req.body.userId !== userId) {
-      throw "User ID non valable";
-    } else {
-      console.log("Authentication successful");
-      next();
+    if (token) {
+      const decodedToken: any = jwt.verify(
+        token,
+        process.env.SECRET_TOKEN
+          ? process.env.SECRET_TOKEN
+          : "63dfb00a-82f0-4125-a009-d6e745ba149f"
+      );
+      const userId = decodedToken.userId;
+      if (req.body.userId && req.body.userId !== userId) {
+        res
+          .status(403)
+          .json({ error: "User ID non autorisé à faire cette requête" });
+      } else {
+        console.log("Authentication successful");
+        next();
+      }
     }
   } catch (error: any) {
     console.log("Authentication was not successful");

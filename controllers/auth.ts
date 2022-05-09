@@ -144,7 +144,19 @@ export const logout = async (req: Request, res: Response) => {
     ? req.headers.authorization.split(" ")[1]
     : null;
   if (!refreshToken) return;
-  RefreshToken.deleteOne({ token: refreshToken }).then(() =>
-    res.sendStatus(204)
-  );
+  RefreshToken.deleteOne({ token: refreshToken }).then(() => res.status(204));
+};
+
+export const checkToken = async (req: Request, res: Response) => {
+  const refreshToken = req.headers.authorization
+    ? req.headers.authorization.split(" ")[1]
+    : null;
+  if (!refreshToken) res.sendStatus(404);
+  RefreshToken.findOne({ token: refreshToken }).then((token) => {
+    if (!token) {
+      res.status(404);
+    } else {
+      res.status(204).json({ message: "Authenticated" });
+    }
+  });
 };
