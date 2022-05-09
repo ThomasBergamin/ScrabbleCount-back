@@ -56,7 +56,7 @@ export const login = async (req: Request, res: Response) => {
             ? process.env.SECRET_TOKEN
             : "63dfb00a-82f0-4125-a009-d6e745ba149f",
           {
-            expiresIn: "15m",
+            expiresIn: "5m",
           }
         );
         const refreshToken = jwt.sign(
@@ -116,14 +116,14 @@ export const refreshToken = async (req: Request, res: Response) => {
         return res.status(401).json({ error: "No user id in decoded token" });
       }
       try {
-        await User.findOne({ _id: userId }).then((user) => {
+        User.findOne({ _id: userId }).then(async (user) => {
           const refreshedAccessToken = jwt.sign(
-            { userId },
+            { userId: user._id },
             process.env.SECRET_TOKEN
               ? process.env.SECRET_TOKEN
               : "63dfb00a-82f0-4125-a009-d6e745ba149f",
             {
-              expiresIn: "15m",
+              expiresIn: "5m",
             }
           );
           res.status(200).json({
@@ -151,7 +151,7 @@ export const checkToken = async (req: Request, res: Response) => {
   const refreshToken = req.headers.authorization
     ? req.headers.authorization.split(" ")[1]
     : null;
-  if (!refreshToken) res.sendStatus(404);
+  if (!refreshToken) res.status(404);
   RefreshToken.findOne({ token: refreshToken }).then((token) => {
     if (!token) {
       res.status(404);
