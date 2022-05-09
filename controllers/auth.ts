@@ -102,7 +102,8 @@ export const refreshToken = async (req: Request, res: Response) => {
     });
 
   RefreshToken.findOne({ token: refreshToken })
-    .then(async () => {
+    .then(async (token) => {
+      if (!token) return res.status(403).send("Invalid Refresh Token");
       const decodedToken: any = jwt.verify(
         refreshToken,
         process.env.REFRESH_TOKEN
@@ -114,10 +115,10 @@ export const refreshToken = async (req: Request, res: Response) => {
       if (!userId) {
         return res.status(401).json({ error: "No user id in decoded token" });
       }
-      await User.findById(userId)
-        .then((user) => {
+      try {
+        await User.findOne({ _id: userId }).then((user) => {
           const refreshedAccessToken = jwt.sign(
-            userId,
+            { userId },
             process.env.SECRET_TOKEN
               ? process.env.SECRET_TOKEN
               : "63dfb00a-82f0-4125-a009-d6e745ba149f",
@@ -128,13 +129,13 @@ export const refreshToken = async (req: Request, res: Response) => {
           res.status(200).json({
             token: refreshedAccessToken,
           });
-        })
-        .catch(() => {
-          res.status(403).json({ error: "User not found in database" });
         });
+      } catch (error) {
+        res.status(403).json({ error: "User not found in database" });
+      }
     })
     .catch(() => {
-      res.status(403).send("Invalid Refresh token");
+      res.status(500).send("Internal server error");
     });
 };
 
