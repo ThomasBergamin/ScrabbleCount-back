@@ -1,11 +1,10 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import User from "../models/User";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { config } from "dotenv";
+import RefreshToken from "../models/RefreshTokens";
 config();
-
-const tokenList: any = {};
 
 export const signup = async (
   req: {
@@ -16,13 +15,17 @@ export const signup = async (
       password: string;
     };
   },
-  res: Response,
-  next: NextFunction
+  res: Response
 ) => {
-  if (!req.body.email) {
+  if (
+    !req.body.email ||
+    !req.body.password ||
+    !req.body.lastName ||
+    !req.body.firstName
+  ) {
     return res
       .status(500)
-      .json({ message: "Can't create user, informations are lacking" });
+      .json({ error: "Can't create user, informations are lacking" });
   }
   const hash = await bcrypt.hash(req.body.password, 10);
   await User.create({
@@ -37,17 +40,12 @@ export const signup = async (
     );
 };
 
-export const login = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const login = async (req: Request, res: Response) => {
   await User.findOne({ email: req.body.email })
     .then((user) => {
       if (!user) {
         return res.status(401).json({ error: "Utilisateur non trouvé !" });
       }
-      console.log(user); // TODO : remove console.log used for dev purposes
       bcrypt.compare(req.body.password, user.password).then((valid) => {
         if (!valid) {
           return res.status(401).json({ error: "Mot de passe incorrect !" });
@@ -67,63 +65,85 @@ export const login = async (
             ? process.env.REFRESH_TOKEN
             : "9ea7deed-bcb5-4a83-a2cd-13d82ca9efa7",
           {
-            expiresIn: "24h",
+            expiresIn: "7d",
           }
         );
-        tokenList[refreshToken] = { token, refreshToken };
-        res.status(200).json({
-          userId: user.id,
-          token,
-          refreshToken,
-        });
+        RefreshToken.deleteOne({ userId: user._id }).then(() =>
+          RefreshToken.create({
+            token: refreshToken,
+            userId: user._id,
+          })
+            .then(() =>
+              res.status(200).json({
+                userId: user.id,
+                token,
+                refreshToken,
+              })
+            )
+            .catch(() =>
+              res.status(500).json({
+                error: "Erreur interne lors de la création du token",
+              })
+            )
+        );
       });
     })
     .catch((error) => res.status(500).json({ error }));
 };
 
-export const refreshToken = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+export const refreshToken = async (req: Request, res: Response) => {
+  const refreshToken = req.headers.authorization
+    ? req.headers.authorization.split(" ")[1]
+    : null;
 
-  if (token == null) return res.sendStatus(401);
+  if (!refreshToken)
+    return res.status(401).json({
+      error: "Token not found",
+    });
 
-  const decodedToken: any = jwt.verify(
-    token,
-    process.env.REFRESH_TOKEN
-      ? process.env.REFRESH_TOKEN
-      : "9ea7deed-bcb5-4a83-a2cd-13d82ca9efa7"
-  );
-  const userId = decodedToken.userId;
+  RefreshToken.findOne({ token: refreshToken })
+    .then(async () => {
+      const decodedToken: any = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN
+          ? process.env.REFRESH_TOKEN
+          : "9ea7deed-bcb5-4a83-a2cd-13d82ca9efa7"
+      );
+      const userId = decodedToken.userId;
 
-  if (!userId) {
-    return res.status(401).json({ message: "No user id in decoded token" });
-  }
-
-  if (decodedToken && decodedToken in tokenList) {
-    await User.findOne({ _id: userId })
-      .then((user) => {
-        const refreshedToken = jwt.sign(
-          userId,
-          process.env.SECRET_TOKEN
-            ? process.env.SECRET_TOKEN
-            : "63dfb00a-82f0-4125-a009-d6e745ba149f",
-          {
-            expiresIn: "15m",
-          }
-        );
-        tokenList[decodedToken.refreshToken].token = token;
-        res.status(200).json({
-          token: refreshedToken,
+      if (!userId) {
+        return res.status(401).json({ error: "No user id in decoded token" });
+      }
+      await User.findById(userId)
+        .then((user) => {
+          const refreshedAccessToken = jwt.sign(
+            userId,
+            process.env.SECRET_TOKEN
+              ? process.env.SECRET_TOKEN
+              : "63dfb00a-82f0-4125-a009-d6e745ba149f",
+            {
+              expiresIn: "15m",
+            }
+          );
+          res.status(200).json({
+            token: refreshedAccessToken,
+          });
+        })
+        .catch(() => {
+          res.status(403).json({ error: "User not found in database" });
         });
-      })
-      .catch(() => {
-        res.status(403).json({ message: "User not found in database" });
-      });
-  } else {
-    res.status(404).send("Invalid request");
-  }
+    })
+    .catch(() => {
+      res.status(403).send("Invalid Refresh token");
+    });
+};
+
+export const logout = async (req: Request, res: Response) => {
+  const refreshToken = req.headers.authorization
+    ? req.headers.authorization.split(" ")[1]
+    : null;
+  if (!refreshToken) return;
+  RefreshToken.deleteOne({ token: refreshToken }).then(() =>
+    res.sendStatus(204)
+  );
 };

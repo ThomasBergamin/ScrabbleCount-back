@@ -26,7 +26,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
       next();
     }
   } catch (error: any) {
-    console.log("Error with authentication", error);
+    console.log("Authentication was not successful");
     res.status(401).json({ error: error || "Requête non authentifiée" });
   }
 };
