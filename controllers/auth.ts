@@ -151,12 +151,15 @@ export const checkToken = async (req: Request, res: Response) => {
   const refreshToken = req.headers.authorization
     ? req.headers.authorization.split(" ")[1]
     : null;
-  if (!refreshToken) res.status(404);
-  RefreshToken.findOne({ token: refreshToken }).then((token) => {
-    if (!token) {
-      res.status(404);
-    } else {
-      res.status(204).json({ message: "Authenticated" });
-    }
-  });
+  if (!refreshToken) {
+    res.status(404).json({ error: "No refresh token sent" });
+  } else {
+    RefreshToken.findOne({ token: refreshToken }).then((token) => {
+      if (!token) {
+        res.status(404).json({ error: "No token corresponding" });
+      } else {
+        res.status(204).json({ message: "Authenticated" });
+      }
+    });
+  }
 };
