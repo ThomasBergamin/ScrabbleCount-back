@@ -38,9 +38,7 @@ export const getGames = (req: Request, res: Response, next: NextFunction) => {
   if (decodedToken) {
     const userId = decodedToken.userId;
 
-    Game.find({
-      $or: [{ "player1.id": userId }, { "player2.id": userId }],
-    })
+    Game.find()
       .sort("date -1")
       .then((games) => {
         setTimeout(() => res.status(200).json(games), 1000);
