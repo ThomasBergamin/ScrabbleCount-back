@@ -43,6 +43,7 @@ export const permissionControl = (
 ) => {
   console.log("Checking permissions");
   const gameId = req.params.id;
+
   try {
     const token = req.headers.authorization
       ? req.headers.authorization.split(" ")[1]
@@ -58,9 +59,7 @@ export const permissionControl = (
     );
     const userId = decodedToken.userId;
 
-    Game.findOne({
-      id: gameId,
-    }).then((game) => {
+    Game.findById(gameId).then((game) => {
       if (game.player1.id === userId || game.player2.id === userId) {
         console.log("Permissions : OK");
         next();
