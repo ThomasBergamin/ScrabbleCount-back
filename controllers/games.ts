@@ -35,23 +35,21 @@ export const getGames = (req: Request, res: Response, next: NextFunction) => {
       error: "Can't decode token sent in request",
     });
   }
-  if (decodedToken) {
-    const userId = decodedToken.userId;
 
-    Game.find()
-      .sort("date -1")
-      .then((games) => {
-        setTimeout(() => res.status(200).json(games), 1000);
-      })
-      .catch((error) => {
-        res.status(400).json({
-          error,
-        });
+  Game.find()
+    .sort("date -1")
+    .then((games) => {
+      setTimeout(() => res.status(200).json(games), 1000);
+    })
+    .catch((error) => {
+      res.status(400).json({
+        error,
       });
-  }
+    });
 };
 
 export const createGame = (req: Request, res: Response, next: NextFunction) => {
+  console.log("Creating Game");
   const player1 = { id: req.body.player1, score: req.body.score1 };
   const player2 = { id: req.body.player2, score: req.body.score2 };
   const winner = determineWinner(player1, player2);
@@ -91,14 +89,14 @@ export const deleteGame = (req: Request, res: Response, next: NextFunction) => {
   Game.findOneAndDelete({
     _id: gameId,
   })
-    .then((game) => {
+    .then(() => {
       setTimeout(
         () => res.status(200).json({ message: "Success with deletion" }),
         1000
       );
     })
     .catch((error) => {
-      res.status(400).json({
+      res.status(404).json({
         error,
       });
     });
