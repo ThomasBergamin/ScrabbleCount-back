@@ -60,15 +60,16 @@ export const permissionControl = (
     const userId = decodedToken.userId;
 
     Game.findById(gameId).then((game) => {
-      if (game.player1.id === userId || game.player2.id === userId) {
-        console.log("Permissions : OK");
-        next();
-      } else {
-        console.log("Permissions : NO");
-        res.status(403).json({
-          message: "User ID non autorisé à modifier cet objet",
-        });
-      }
+      if (game)
+        if (game.player1.id === userId || game.player2.id === userId) {
+          console.log("Permissions : OK");
+          next();
+        } else {
+          console.log("Permissions : NO");
+          res.status(403).json({
+            message: "User ID non autorisé à modifier cet objet",
+          });
+        }
     });
   } catch (error: any) {
     console.log("Permissions : ERROR");

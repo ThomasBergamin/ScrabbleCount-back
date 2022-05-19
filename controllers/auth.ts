@@ -92,6 +92,7 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const refreshToken = async (req: Request, res: Response) => {
+  console.log("Refreshing token");
   const refreshToken = req.headers.authorization
     ? req.headers.authorization.split(" ")[1]
     : null;
@@ -117,18 +118,20 @@ export const refreshToken = async (req: Request, res: Response) => {
       }
       try {
         User.findOne({ _id: userId }).then(async (user) => {
-          const refreshedAccessToken = jwt.sign(
-            { userId: user._id },
-            process.env.SECRET_TOKEN
-              ? process.env.SECRET_TOKEN
-              : "63dfb00a-82f0-4125-a009-d6e745ba149f",
-            {
-              expiresIn: "5m",
-            }
-          );
-          res.status(200).json({
-            token: refreshedAccessToken,
-          });
+          if (user) {
+            const refreshedAccessToken = jwt.sign(
+              { userId: user._id },
+              process.env.SECRET_TOKEN
+                ? process.env.SECRET_TOKEN
+                : "63dfb00a-82f0-4125-a009-d6e745ba149f",
+              {
+                expiresIn: "5m",
+              }
+            );
+            res.status(200).json({
+              token: refreshedAccessToken,
+            });
+          }
         });
       } catch (error) {
         res.status(403).json({ error: "User not found in database" });
@@ -148,6 +151,7 @@ export const logout = async (req: Request, res: Response) => {
 };
 
 export const checkToken = async (req: Request, res: Response) => {
+  console.log("Checking Token");
   const refreshToken = req.headers.authorization
     ? req.headers.authorization.split(" ")[1]
     : null;

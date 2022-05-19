@@ -1,6 +1,17 @@
 import mongoose from "mongoose";
 
-const gameSchema = new mongoose.Schema(
+export interface IGame {
+  date: string; // DD-MM-YYYY
+  time: string; // HH:MM
+  location: string;
+  player1: { id: string; score: string; scrabbles: string };
+  player2: { id: string; score: string; scrabbles: string };
+  winner?: { playerId: string; playerScore: string };
+  comments?: string;
+  type: "Draw" | "Victory";
+}
+
+const gameSchema = new mongoose.Schema<IGame>(
   {
     date: { type: String, required: true },
     time: { type: String, required: true },
@@ -24,7 +35,7 @@ const gameSchema = new mongoose.Schema(
 
     winner: { playerId: { type: String }, playerScore: { type: String } },
     type: { type: String, required: true },
-    commentaires: { type: String },
+    comments: { type: String },
   },
   {
     timestamps: true,
